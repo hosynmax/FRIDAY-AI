@@ -46,6 +46,7 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Locale
+import java.net.URLEncoder
 
 private val Navy = Color(0xFF07111F)
 private val Panel = Color(0xFF101F32)
@@ -188,6 +189,36 @@ fun FridayApp() {
                 }
             } else {
                 Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF071321), Color(0xFF0B1730), Color(0xFF120F28)))).padding(padding)) {
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { openChatGPT(context) },
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+                        ) { Text("ChatGPT", color = Color.White, maxLines = 1) }
+                        OutlinedButton(
+                            onClick = {
+                                val query = input.trim().ifBlank { messages.lastOrNull { it.fromUser }?.text.orEmpty() }
+                                if (query.isBlank()) {
+                                    android.widget.Toast.makeText(context, "ابتدا عبارت جست‌وجو را بنویس.", android.widget.Toast.LENGTH_SHORT).show()
+                                } else {
+                                    searchGoogle(context, query)
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+                        ) { Text("جست‌وجوی گوگل", color = Mint, maxLines = 1) }
+                    }
+                    Text(
+                        "پاسخ‌گویی هوشمند محلی از طریق سرور FRIDAY",
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp),
+                        color = Mint.copy(alpha = 0.8f),
+                        textAlign = TextAlign.Center,
+                        fontSize = 11.sp
+                    )
                     Box(Modifier.fillMaxWidth().padding(top = 12.dp), contentAlignment = Alignment.Center) {
                         Box(Modifier.size(142.dp).background(Brush.radialGradient(listOf(Color(0x884B55FF), Color(0x5530DFFF), Color.Transparent)), CircleShape), contentAlignment = Alignment.Center) {
                             Surface(shape = CircleShape, color = Color(0x5532DFFF), tonalElevation = 12.dp, shadowElevation = 18.dp) {
@@ -260,5 +291,28 @@ private fun SettingsPanel(modifier: Modifier = Modifier, serverUrl: String, onSe
         }
         Text("کلید API فقط روی سرور نگهداری می‌شود و داخل APK ذخیره نمی‌شود.", color = Color.Gray, fontSize = 13.sp)
         Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text("ذخیره تنظیمات") }
+    }
+}
+
+private fun openChatGPT(context: android.content.Context) {
+    try {
+        val appIntent = context.packageManager.getLaunchIntentForPackage("com.openai.chatgpt")
+        if (appIntent != null) context.startActivity(appIntent)
+        else context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://chatgpt.com/")))
+    } catch (_: Exception) {
+        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://chatgpt.com/"))) }
+    }
+}
+
+private fun searchGoogle(context: android.content.Context, query: String) {
+    val encoded = URLEncoder.encode(query, "UTF-8")
+    try {
+        context.startActivity(Intent(Intent.ACTION_WEB_SEARCH).putExtra("query", query))
+    } catch (_: Exception) {
+        runCatching {
+            context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.google.com/search?q=$encoded")))
+        }.onFailure {
+            android.widget.Toast.makeText(context, "مرورگر یا برنامه جست‌وجو در دسترس نیست.", android.widget.Toast.LENGTH_LONG).show()
+        }
     }
 }
