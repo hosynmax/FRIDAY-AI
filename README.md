@@ -1,32 +1,25 @@
-# FRIDAY AI — Native Android
+# FRIDAY AI
 
-A native Android assistant starter project built with Kotlin, Jetpack Compose and Material 3.
+Android app (Kotlin + Jetpack Compose) with a Node.js AI backend.
 
-## Build
-GitHub Actions builds a debug APK automatically on every push to `main` and on manual workflow dispatch.
-
-- Minimum SDK: 33 (Android 13)
-- Target SDK: 35
+## Android
 - Package: `com.friday.assistant`
-- UI: Persian-first RTL
+- Minimum Android: 13 (API 33)
+- Compile/target SDK: 35
+- Persian chat interface, locally saved chat history, speech-to-text via Android speech recognition, and text-to-speech replies.
+- Configure the backend HTTPS base URL in Settings. The app calls `POST /v1/chat`.
 
-## Download APK
-Open the repository's **Actions** tab, select the latest successful **Build FRIDAY AI APK** run, and download the `FRIDAY-AI-debug-apk` artifact.
+## Backend
+1. Use Node.js 20 or newer.
+2. Copy `backend/.env.example` to `backend/.env` and set `OPENAI_API_KEY`.
+3. In `backend/`, run `npm install` then `npm start`.
+4. Deploy behind HTTPS and enter its base URL in the Android app.
 
-## Current scope
-- Native Android application shell
-- Persian RTL assistant interface
-- Local chat UI and settings
-- Internet and microphone permission declarations
-- CI workflow for debug APK
+Never put provider API keys in the Android project or APK.
 
-Not yet included: production AI provider connectivity, always-on hotword recognition, overlay assistant, calendar/task integrations, or release signing. These require additional implementation, runtime testing, and secure backend configuration. No API keys belong in the Android app.
-
-## Build locally
-Use Android Studio with JDK 17 and Android SDK 35, then run:
-
+## Build APK
+Open in Android Studio with JDK 17 and Android SDK 35, then run:
 ```bash
-gradle assembleDebug
+./gradlew assembleDebug
 ```
-
-Output: `app/build/outputs/apk/debug/app-debug.apk`.
+APK output: `app/build/outputs/apk/debug/app-debug.apk`. GitHub Actions builds a debug APK artifact on pushes to `main`.
