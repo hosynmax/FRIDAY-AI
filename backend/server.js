@@ -17,7 +17,7 @@ const store = createConversationStore();
 function requireAccessToken(req, res, next) {
   const expected = process.env.API_ACCESS_TOKEN;
   if (!expected) return next();
-  const supplied = req.get("authorization")?.replace(/^Bearer\\s+/i, "");
+  const supplied = req.get("authorization")?.replace(/^Bearer\s+/i, "");
   if (supplied !== expected) return res.status(401).json({ error: "دسترسی غیرمجاز است.", code: "UNAUTHORIZED" });
   return next();
 }
@@ -26,7 +26,7 @@ app.get("/health", async (_req, res) => {
   let modelReady = true;
   if (provider.name === "ollama") {
     try {
-      const base = (process.env.OLLAMA_BASE_URL || "http://ollama:11434").replace(/\\/$/, "");
+      const base = (process.env.OLLAMA_BASE_URL || "http://ollama:11434").replace(/\/$/, "");
       const response = await fetch(base + "/api/tags", { signal: AbortSignal.timeout(2500) });
       modelReady = response.ok;
     } catch { modelReady = false; }
