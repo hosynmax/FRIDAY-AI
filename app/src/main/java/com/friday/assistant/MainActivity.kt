@@ -46,6 +46,7 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Locale
+import java.net.URLEncoder
 
 private val Navy = Color(0xFF07111F)
 private val Panel = Color(0xFF101F32)
@@ -188,6 +189,36 @@ fun FridayApp() {
                 }
             } else {
                 Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF071321), Color(0xFF0B1730), Color(0xFF120F28)))).padding(padding)) {
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { openChatGPT(context) },
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+                        ) { Text("ChatGPT", color = Color.White, maxLines = 1) }
+                        OutlinedButton(
+                            onClick = {
+                                val query = input.trim().ifBlank { messages.lastOrNull { it.fromUser }?.text.orEmpty() }
+                                if (query.isBlank()) {
+                                    android.widget.Toast.makeText(context, "ابتدا عبارت جست‌وجو را بنویس.", android.widget.Toast.LENGTH_SHORT).show()
+                                } else {
+                                    searchGoogle(context, query)
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+                        ) { Text("جست‌وجوی گوگل", color = Mint, maxLines = 1) }
+                    }
+                    Text(
+                        "پاسخ‌گویی هوشمند محلی از طریق سرور FRIDAY",
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp),
+                        color = Mint.copy(alpha = 0.8f),
+                        textAlign = TextAlign.Center,
+                        fontSize = 11.sp
+                    )
                     Box(Modifier.fillMaxWidth().padding(top = 12.dp), contentAlignment = Alignment.Center) {
                         Box(Modifier.size(142.dp).background(Brush.radialGradient(listOf(Color(0x884B55FF), Color(0x5530DFFF), Color.Transparent)), CircleShape), contentAlignment = Alignment.Center) {
                             Surface(shape = CircleShape, color = Color(0x5532DFFF), tonalElevation = 12.dp, shadowElevation = 18.dp) {
@@ -228,13 +259,22 @@ private fun requestFriday(baseUrl: String, history: List<ChatMessage>, question:
         all.put(JSONObject().put("role", "user").put("content", question))
         connection.outputStream.use { it.write(JSONObject().put("messages", all).toString().toByteArray(Charsets.UTF_8)) }
         val code = connection.responseCode
+        val contentType = connection.contentType.orEmpty()
         val stream = if (code in 200..299) connection.inputStream else connection.errorStream
-        val response = stream.bufferedReader().use { it.readText() }
+        val response = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
         connection.disconnect()
-        if (code !in 200..299) "خطای سرور ($code): ${response.take(250)}"
-        else JSONObject(response).optString("reply").ifBlank { "سرور پاسخ خالی برگرداند." }
+        if (!contentType.contains("application/json", ignoreCase = true)) {
+            "پاسخ سرور معتبر نیست (HTTP $code). احتمالاً نشانی Backend اشتباه است؛ آدرس GitHub را وارد نکن. فقط آدرس پایه HTTPS سرور FRIDAY را وارد کن."
+        } else {
+            val json = runCatching { JSONObject(response) }.getOrNull()
+            if (code !in 200..299) {
+                json?.optString("error")?.takeIf { it.isNotBlank() } ?: "خطای سرور ($code)."
+            } else {
+                json?.optString("reply")?.takeIf { it.isNotBlank() } ?: "سرور پاسخ متنی معتبری برنگرداند."
+            }
+        }
     } catch (e: Exception) {
-        "اتصال به سرور برقرار نشد: ${e.localizedMessage ?: "خطای نامشخص"}. نشانی سرور و اینترنت را بررسی کن."
+        "اتصال به سرور برقرار نشد. نشانی باید با https:// شروع شود و به سرور Backend مستقرشده اشاره کند؛ آدرس GitHub قابل استفاده نیست."
     }
 }
 
@@ -251,5 +291,28 @@ private fun SettingsPanel(modifier: Modifier = Modifier, serverUrl: String, onSe
         }
         Text("کلید API فقط روی سرور نگهداری می‌شود و داخل APK ذخیره نمی‌شود.", color = Color.Gray, fontSize = 13.sp)
         Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text("ذخیره تنظیمات") }
+    }
+}
+
+private fun openChatGPT(context: android.content.Context) {
+    try {
+        val appIntent = context.packageManager.getLaunchIntentForPackage("com.openai.chatgpt")
+        if (appIntent != null) context.startActivity(appIntent)
+        else context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://chatgpt.com/")))
+    } catch (_: Exception) {
+        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://chatgpt.com/"))) }
+    }
+}
+
+private fun searchGoogle(context: android.content.Context, query: String) {
+    val encoded = URLEncoder.encode(query, "UTF-8")
+    try {
+        context.startActivity(Intent(Intent.ACTION_WEB_SEARCH).putExtra("query", query))
+    } catch (_: Exception) {
+        runCatching {
+            context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.google.com/search?q=$encoded")))
+        }.onFailure {
+            android.widget.Toast.makeText(context, "مرورگر یا برنامه جست‌وجو در دسترس نیست.", android.widget.Toast.LENGTH_LONG).show()
+        }
     }
 }
