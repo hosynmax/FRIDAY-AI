@@ -79,7 +79,8 @@ data class ChatMessage(val text: String, val fromUser: Boolean)
 @Composable
 fun FridayApp() {
     val context = LocalContext.current
-    val prefs = remember { context.getSharedPreferences("friday_settings", 0) // Keep the legacy store to preserve existing user settings. }
+    // Keep the legacy preference store to preserve existing settings and chat history.
+    val prefs = remember { context.getSharedPreferences("friday_settings", 0) }
     var input by remember { mutableStateOf("") }
     var serverUrl by remember { mutableStateOf(prefs.getString("server_url", "") ?: "") }
     var showSettings by remember { mutableStateOf(false) }
