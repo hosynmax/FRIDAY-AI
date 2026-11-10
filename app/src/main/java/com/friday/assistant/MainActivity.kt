@@ -4,6 +4,10 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.view.WindowManager
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import android.speech.RecognizerIntent
 import android.speech.tts.TextToSpeech
 import androidx.activity.ComponentActivity
@@ -51,7 +55,20 @@ private val Mint = Color(0xFF4EF0C2)
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.attributes = window.attributes.apply { layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER }
+        enterImmersiveMode()
         setContent { FridayApp() }
+    }
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) enterImmersiveMode()
+    }
+    private fun enterImmersiveMode() {
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            hide(WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.navigationBars())
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
     }
 }
 
@@ -135,16 +152,18 @@ fun FridayApp() {
 
     MaterialTheme(colorScheme = darkColorScheme(primary = Cyan, secondary = Mint, background = Navy, surface = Panel)) {
         Scaffold(
-            containerColor = Navy,
+            modifier = Modifier.background(Brush.linearGradient(listOf(Color(0xFF030812), Color(0xFF091D32), Color(0xFF160F32)))),
+            containerColor = Color.Transparent,
             topBar = {
                 TopAppBar(
-                    title = { Column { Text("FRIDAY AI", fontWeight = FontWeight.Bold, letterSpacing = 2.sp); Text("دستیار هوشمند شخصی", fontSize = 12.sp, color = Mint) } },
+                    modifier = Modifier.padding(top = 12.dp, start = 8.dp, end = 8.dp),
+                    title = { Column { Text("FRIDAY AI", fontWeight = FontWeight.ExtraBold, letterSpacing = 3.sp, fontSize = 21.sp); Text("YOUR INTELLIGENT COMPANION", fontSize = 9.sp, color = Mint, letterSpacing = 1.5.sp) } },
                     actions = { IconButton(onClick = { showSettings = !showSettings }) { Icon(Icons.Default.Settings, "تنظیمات", tint = Color.White) } },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Navy, titleContentColor = Color.White)
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xCC0B192B), titleContentColor = Color.White)
                 )
             },
             bottomBar = {
-                Row(Modifier.fillMaxWidth().background(Panel).padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().background(Brush.horizontalGradient(listOf(Color(0xEE10243A), Color(0xEE17132F)))).padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = {
                         if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
                             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -168,11 +187,13 @@ fun FridayApp() {
                     showSettings = false
                 }
             } else {
-                Column(Modifier.fillMaxSize().padding(padding)) {
+                Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF071321), Color(0xFF0B1730), Color(0xFF120F28)))).padding(padding)) {
                     Box(Modifier.fillMaxWidth().padding(top = 12.dp), contentAlignment = Alignment.Center) {
-                        Box(Modifier.size(112.dp).background(Brush.radialGradient(listOf(Cyan.copy(alpha = .24f), Color.Transparent)), CircleShape), contentAlignment = Alignment.Center) {
-                            Box(Modifier.size(78.dp).background(Brush.linearGradient(listOf(Color(0xFF123A55), Color(0xFF0B1A2A))), CircleShape), contentAlignment = Alignment.Center) {
-                                Text("F", color = Cyan, fontSize = 42.sp, fontWeight = FontWeight.Light)
+                        Box(Modifier.size(142.dp).background(Brush.radialGradient(listOf(Color(0x884B55FF), Color(0x5530DFFF), Color.Transparent)), CircleShape), contentAlignment = Alignment.Center) {
+                            Surface(shape = CircleShape, color = Color(0x5532DFFF), tonalElevation = 12.dp, shadowElevation = 18.dp) {
+                                Box(Modifier.size(88.dp).background(Brush.linearGradient(listOf(Color(0xFF173E5B), Color(0xFF241B4A))), CircleShape), contentAlignment = Alignment.Center) {
+                                    Text("F", color = Cyan, fontSize = 52.sp, fontWeight = FontWeight.Black)
+                                }
                             }
                         }
                     }
