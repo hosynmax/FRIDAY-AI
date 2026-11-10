@@ -5,13 +5,13 @@ plugins {
 }
 android {
     namespace = "com.friday.assistant"
-    compileSdk = 35
+    compileSdk = 36
     defaultConfig {
         applicationId = "com.friday.assistant"
-        minSdk = 33
-        targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        minSdk = 26
+        targetSdk = 36
+        versionCode = 2
+        versionName = "1.1.0"
     }
     buildTypes {
         release {
