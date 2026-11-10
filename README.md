@@ -1,25 +1,29 @@
 # FRIDAY AI
 
-Android app (Kotlin + Jetpack Compose) with a Node.js AI backend.
+Native Android app (Kotlin + Jetpack Compose) and a self-hosted AI backend.
 
 ## Android
 - Package: `com.friday.assistant`
 - Minimum Android: 13 (API 33)
-- Compile/target SDK: 35
-- Persian chat interface, locally saved chat history, speech-to-text via Android speech recognition, and text-to-speech replies.
-- Configure the backend HTTPS base URL in Settings. The app calls `POST /v1/chat`.
+- Persian-first chat UI, local chat history, Android speech recognition and text-to-speech.
+- In Settings, enter the backend **HTTPS base URL only**, e.g. `https://ai.example.com`. The app appends `/v1/chat` automatically. Do not enter a GitHub repository URL.
 
-## Backend
-1. Use Node.js 20 or newer.
-2. Copy `backend/.env.example` to `backend/.env` and set `OPENAI_API_KEY`.
-3. In `backend/`, run `npm install` then `npm start`.
-4. Deploy behind HTTPS and enter its base URL in the Android app.
+## Free AI backend (no paid API key)
+The backend uses Ollama with the open-weight Qwen2.5 model. Inference runs on your own server; no OpenAI/Gemini/Claude API keys are required.
+See [backend setup](backend/README.md).
 
-Never put provider API keys in the Android project or APK.
+Quick start from repository root:
+```bash
+docker compose up -d --build
+docker compose exec ollama ollama pull qwen2.5:3b
+```
+Deploy behind HTTPS and enter that HTTPS base URL in the Android app.
+
+## Important
+- "Free model" means no per-request AI API bill; hosting, electricity and hardware are still required.
+- Never expose Ollama port 11434 publicly.
+- Add an HTTPS reverse proxy, firewall and app authentication before public deployment.
+- Do not commit secrets.
 
 ## Build APK
-Open in Android Studio with JDK 17 and Android SDK 35, then run:
-```bash
-./gradlew assembleDebug
-```
-APK output: `app/build/outputs/apk/debug/app-debug.apk`. GitHub Actions builds a debug APK artifact on pushes to `main`.
+Open in Android Studio with JDK 17 and Android SDK 35, then run `./gradlew assembleDebug`.
