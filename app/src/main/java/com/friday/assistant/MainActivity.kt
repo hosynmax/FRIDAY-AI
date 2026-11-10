@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -88,6 +89,7 @@ fun FridayApp() {
     val prefs = remember { context.getSharedPreferences("friday_settings", 0) }
     var input by remember { mutableStateOf("") }
     var serverUrl by remember { mutableStateOf(prefs.getString("server_url", "") ?: "") }
+    var accessToken by remember { mutableStateOf(prefs.getString("api_access_token", "") ?: "") }
     var showSettings by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var speakReplies by remember { mutableStateOf(prefs.getBoolean("speak_replies", true)) }
@@ -145,7 +147,7 @@ fun FridayApp() {
         persist()
         busy = true
         val answer = withContext(Dispatchers.IO) {
-            requestFriday(serverUrl, messages.dropLast(1).takeLast(20), question)
+            requestFriday(serverUrl, accessToken, messages.dropLast(1).takeLast(20), question)
         }
         messages.add(ChatMessage(answer, false))
         persist()
@@ -188,8 +190,8 @@ fun FridayApp() {
             }
         ) { padding ->
             if (showSettings) {
-                SettingsPanel(Modifier.padding(padding), serverUrl, { serverUrl = it }, speakReplies, { speakReplies = it; prefs.edit().putBoolean("speak_replies", it).apply() }) {
-                    prefs.edit().putString("server_url", serverUrl.trim().trimEnd('/')).apply()
+                SettingsPanel(Modifier.padding(padding), serverUrl, { serverUrl = it }, accessToken, { accessToken = it }, speakReplies, { speakReplies = it; prefs.edit().putBoolean("speak_replies", it).apply() }) {
+                    prefs.edit().putString("server_url", serverUrl.trim().trimEnd('/')).putString("api_access_token", accessToken.trim()).apply()
                     serverUrl = serverUrl.trim().trimEnd('/')
                     showSettings = false
                 }
@@ -250,7 +252,7 @@ fun FridayApp() {
     }
 }
 
-private fun requestFriday(baseUrl: String, history: List<ChatMessage>, question: String): String {
+private fun requestFriday(baseUrl: String, accessToken: String, history: List<ChatMessage>, question: String): String {
     if (baseUrl.isBlank()) return "برای فعال شدن پاسخ هوشمند، نشانی HTTPS سرور Ollama/FRIDAY را در تنظیمات وارد کن. اجرای مدل روی سرور شخصی رایگان از نظر هزینه API است، اما به سخت‌افزار و میزبانی نیاز دارد."
     return try {
         val connection = (URL(baseUrl.trimEnd('/') + "/v1/chat").openConnection() as HttpURLConnection).apply {
@@ -259,6 +261,7 @@ private fun requestFriday(baseUrl: String, history: List<ChatMessage>, question:
             readTimeout = 60000
             doOutput = true
             setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            if (accessToken.isNotBlank()) setRequestProperty("Authorization", "Bearer $accessToken")
         }
         val all = JSONArray()
         history.forEach { all.put(JSONObject().put("role", if (it.fromUser) "user" else "assistant").put("content", it.text)) }
@@ -285,17 +288,18 @@ private fun requestFriday(baseUrl: String, history: List<ChatMessage>, question:
 }
 
 @Composable
-private fun SettingsPanel(modifier: Modifier = Modifier, serverUrl: String, onServerUrlChange: (String) -> Unit, speakReplies: Boolean, onSpeakChange: (Boolean) -> Unit, onSave: () -> Unit) {
+private fun SettingsPanel(modifier: Modifier = Modifier, serverUrl: String, onServerUrlChange: (String) -> Unit, accessToken: String, onAccessTokenChange: (String) -> Unit, speakReplies: Boolean, onSpeakChange: (Boolean) -> Unit, onSave: () -> Unit) {
     Column(modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text("تنظیمات JARVIS", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
         Text("اتصال به سرور هوش مصنوعی", color = Mint)
         OutlinedTextField(value = serverUrl, onValueChange = onServerUrlChange, modifier = Modifier.fillMaxWidth(), label = { Text("نشانی سرور HTTPS") }, placeholder = { Text("https://...") }, singleLine = true)
+        OutlinedTextField(value = accessToken, onValueChange = onAccessTokenChange, modifier = Modifier.fillMaxWidth(), label = { Text("توکن دسترسی سرور (اختیاری)") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("خواندن پاسخ‌ها با صدا", color = Color.White, modifier = Modifier.weight(1f))
             Switch(checked = speakReplies, onCheckedChange = onSpeakChange)
             Icon(Icons.Default.VolumeUp, null, tint = Mint)
         }
-        Text("کلید API فقط روی سرور نگهداری می‌شود و داخل APK ذخیره نمی‌شود.", color = Color.Gray, fontSize = 13.sp)
+        Text("کلید سرویس‌دهنده مدل فقط روی سرور نگهداری می‌شود؛ این فیلد صرفاً توکن دسترسی شخصی Backend است.", color = Color.Gray, fontSize = 13.sp)
         Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text("ذخیره تنظیمات") }
     }
 }
