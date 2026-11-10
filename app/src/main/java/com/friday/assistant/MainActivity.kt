@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.Build
 import android.view.WindowManager
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -35,6 +36,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,16 +50,20 @@ import java.net.URL
 import java.util.Locale
 import java.net.URLEncoder
 
-private val Navy = Color(0xFF07111F)
-private val Panel = Color(0xFF101F32)
-private val Cyan = Color(0xFF00D9FF)
+private val Navy = Color(0xFF050A14)
+private val Panel = Color(0xFF101B2C)
+private val Cyan = Color(0xFF39D9FF)
 private val Mint = Color(0xFF4EF0C2)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        window.attributes = window.attributes.apply { layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            window.attributes = window.attributes.apply {
+                layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
+        }
         enterImmersiveMode()
         setContent { FridayApp() }
     }
@@ -79,9 +85,11 @@ data class ChatMessage(val text: String, val fromUser: Boolean)
 @Composable
 fun FridayApp() {
     val context = LocalContext.current
+    // Keep the legacy preference store to preserve existing settings and chat history.
     val prefs = remember { context.getSharedPreferences("friday_settings", 0) }
     var input by remember { mutableStateOf("") }
     var serverUrl by remember { mutableStateOf(prefs.getString("server_url", "") ?: "") }
+    var accessToken by remember { mutableStateOf(prefs.getString("api_access_token", "") ?: "") }
     var showSettings by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var speakReplies by remember { mutableStateOf(prefs.getBoolean("speak_replies", true)) }
@@ -95,7 +103,7 @@ fun FridayApp() {
                     add(ChatMessage(item.getString("text"), item.getBoolean("user")))
                 }
             }
-            if (isEmpty()) add(ChatMessage("سلام! من فرایدی هستم. برای شروع پیام بده یا از دکمه میکروفون استفاده کن.", false))
+            if (isEmpty()) add(ChatMessage("سلام! من JARVIS هستم. آماده دریافت فرمان هستم. پیام بده یا از میکروفون استفاده کن.", false))
         }
     }
     val scope = rememberCoroutineScope()
@@ -125,7 +133,7 @@ fun FridayApp() {
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE, "fa-IR")
-                putExtra(RecognizerIntent.EXTRA_PROMPT, "با فرایدی صحبت کن")
+                putExtra(RecognizerIntent.EXTRA_PROMPT, "با JARVIS صحبت کن")
             }
             runCatching { speechLauncher.launch(intent) }
         }
@@ -139,7 +147,7 @@ fun FridayApp() {
         persist()
         busy = true
         val answer = withContext(Dispatchers.IO) {
-            requestFriday(serverUrl, messages.dropLast(1).takeLast(20), question)
+            requestFriday(serverUrl, accessToken, messages.dropLast(1).takeLast(20), question)
         }
         messages.add(ChatMessage(answer, false))
         persist()
@@ -153,12 +161,12 @@ fun FridayApp() {
 
     MaterialTheme(colorScheme = darkColorScheme(primary = Cyan, secondary = Mint, background = Navy, surface = Panel)) {
         Scaffold(
-            modifier = Modifier.background(Brush.linearGradient(listOf(Color(0xFF030812), Color(0xFF091D32), Color(0xFF160F32)))),
+            modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.displayCutout).background(Brush.linearGradient(listOf(Color(0xFF030812), Color(0xFF091D32), Color(0xFF160F32)))),
             containerColor = Color.Transparent,
             topBar = {
                 TopAppBar(
                     modifier = Modifier.padding(top = 12.dp, start = 8.dp, end = 8.dp),
-                    title = { Column { Text("FRIDAY AI", fontWeight = FontWeight.ExtraBold, letterSpacing = 3.sp, fontSize = 21.sp); Text("YOUR INTELLIGENT COMPANION", fontSize = 9.sp, color = Mint, letterSpacing = 1.5.sp) } },
+                    title = { Column { Text("JARVIS AI", fontWeight = FontWeight.ExtraBold, letterSpacing = 3.sp, fontSize = 21.sp); Text("PERSONAL INTELLIGENCE SYSTEM", fontSize = 9.sp, color = Mint, letterSpacing = 1.5.sp) } },
                     actions = { IconButton(onClick = { showSettings = !showSettings }) { Icon(Icons.Default.Settings, "تنظیمات", tint = Color.White) } },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xCC0B192B), titleContentColor = Color.White)
                 )
@@ -170,7 +178,7 @@ fun FridayApp() {
                             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                                 putExtra(RecognizerIntent.EXTRA_LANGUAGE, "fa-IR")
-                                putExtra(RecognizerIntent.EXTRA_PROMPT, "با فرایدی صحبت کن")
+                                putExtra(RecognizerIntent.EXTRA_PROMPT, "با JARVIS صحبت کن")
                             }
                             runCatching { speechLauncher.launch(intent) }
                         } else permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
@@ -182,8 +190,8 @@ fun FridayApp() {
             }
         ) { padding ->
             if (showSettings) {
-                SettingsPanel(Modifier.padding(padding), serverUrl, { serverUrl = it }, speakReplies, { speakReplies = it; prefs.edit().putBoolean("speak_replies", it).apply() }) {
-                    prefs.edit().putString("server_url", serverUrl.trim().trimEnd('/')).apply()
+                SettingsPanel(Modifier.padding(padding), serverUrl, { serverUrl = it }, accessToken, { accessToken = it }, speakReplies, { speakReplies = it; prefs.edit().putBoolean("speak_replies", it).apply() }) {
+                    prefs.edit().putString("server_url", serverUrl.trim().trimEnd('/')).putString("api_access_token", accessToken.trim()).apply()
                     serverUrl = serverUrl.trim().trimEnd('/')
                     showSettings = false
                 }
@@ -213,7 +221,7 @@ fun FridayApp() {
                         ) { Text("جست‌وجوی گوگل", color = Mint, maxLines = 1) }
                     }
                     Text(
-                        "پاسخ‌گویی هوشمند محلی از طریق سرور FRIDAY",
+                        "اتصال هوش مصنوعی محلی از طریق سرور شخصی",
                         modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp),
                         color = Mint.copy(alpha = 0.8f),
                         textAlign = TextAlign.Center,
@@ -244,8 +252,8 @@ fun FridayApp() {
     }
 }
 
-private fun requestFriday(baseUrl: String, history: List<ChatMessage>, question: String): String {
-    if (baseUrl.isBlank()) return "برای فعال شدن پاسخ هوشمند، نشانی سرور را در تنظیمات وارد کن. کلید API نباید داخل برنامه قرار بگیرد."
+private fun requestFriday(baseUrl: String, accessToken: String, history: List<ChatMessage>, question: String): String {
+    if (baseUrl.isBlank()) return "برای فعال شدن پاسخ هوشمند، نشانی HTTPS سرور Ollama/FRIDAY را در تنظیمات وارد کن. اجرای مدل روی سرور شخصی رایگان از نظر هزینه API است، اما به سخت‌افزار و میزبانی نیاز دارد."
     return try {
         val connection = (URL(baseUrl.trimEnd('/') + "/v1/chat").openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
@@ -253,6 +261,7 @@ private fun requestFriday(baseUrl: String, history: List<ChatMessage>, question:
             readTimeout = 60000
             doOutput = true
             setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            if (accessToken.isNotBlank()) setRequestProperty("Authorization", "Bearer $accessToken")
         }
         val all = JSONArray()
         history.forEach { all.put(JSONObject().put("role", if (it.fromUser) "user" else "assistant").put("content", it.text)) }
@@ -279,17 +288,18 @@ private fun requestFriday(baseUrl: String, history: List<ChatMessage>, question:
 }
 
 @Composable
-private fun SettingsPanel(modifier: Modifier = Modifier, serverUrl: String, onServerUrlChange: (String) -> Unit, speakReplies: Boolean, onSpeakChange: (Boolean) -> Unit, onSave: () -> Unit) {
+private fun SettingsPanel(modifier: Modifier = Modifier, serverUrl: String, onServerUrlChange: (String) -> Unit, accessToken: String, onAccessTokenChange: (String) -> Unit, speakReplies: Boolean, onSpeakChange: (Boolean) -> Unit, onSave: () -> Unit) {
     Column(modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text("تنظیمات فرایدی", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Text("تنظیمات JARVIS", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
         Text("اتصال به سرور هوش مصنوعی", color = Mint)
         OutlinedTextField(value = serverUrl, onValueChange = onServerUrlChange, modifier = Modifier.fillMaxWidth(), label = { Text("نشانی سرور HTTPS") }, placeholder = { Text("https://...") }, singleLine = true)
+        OutlinedTextField(value = accessToken, onValueChange = onAccessTokenChange, modifier = Modifier.fillMaxWidth(), label = { Text("توکن دسترسی سرور (اختیاری)") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("خواندن پاسخ‌ها با صدا", color = Color.White, modifier = Modifier.weight(1f))
             Switch(checked = speakReplies, onCheckedChange = onSpeakChange)
             Icon(Icons.Default.VolumeUp, null, tint = Mint)
         }
-        Text("کلید API فقط روی سرور نگهداری می‌شود و داخل APK ذخیره نمی‌شود.", color = Color.Gray, fontSize = 13.sp)
+        Text("کلید سرویس‌دهنده مدل فقط روی سرور نگهداری می‌شود؛ این فیلد صرفاً توکن دسترسی شخصی Backend است.", color = Color.Gray, fontSize = 13.sp)
         Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text("ذخیره تنظیمات") }
     }
 }

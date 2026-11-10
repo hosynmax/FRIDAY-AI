@@ -1,38 +1,30 @@
-# FRIDAY AI — Free local-model backend
+# JARVIS AI — modular backend
 
-This backend uses **Ollama + Qwen2.5**. It does not require OpenAI, Gemini, Claude, or any paid inference API key. Model inference runs on hardware you control.
+The backend separates the Android client from model providers and keeps credentials on the server.
 
-## Requirements
-- Docker Engine + Docker Compose
-- A host with enough RAM/CPU (GPU recommended). Qwen2.5 3B is the default lightweight model; 7B generally needs more memory and responds more slowly on CPU.
+## Model engine
+- Default: local Ollama, default model `qwen2.5:3b`.
+- Optional: any OpenAI-compatible chat-completions endpoint.
+- Switch with `AI_PROVIDER=ollama` or `AI_PROVIDER=openai-compatible`.
+- For the compatible provider set `OPENAI_COMPATIBLE_BASE_URL`, `OPENAI_COMPATIBLE_MODEL`, and optionally `OPENAI_COMPATIBLE_API_KEY`.
+- Never put provider keys in the Android app, repository, or client settings.
 
-## Start
-From the repository root:
-```bash
-docker compose up -d --build
-docker compose exec ollama ollama pull qwen2.5:3b
-```
-Check readiness:
-```bash
-curl http://localhost:8080/health
-```
-Set the app's server base URL to your **public HTTPS URL** (for example, `https://ai.your-domain.example`), not a GitHub URL and not `/v1/chat`. The Android app appends `/v1/chat` itself.
+## Run
+Requires Node.js 20+. Run `npm install`, `npm test`, then `npm start` from this directory.
+For local inference, run Ollama and pull `qwen2.5:3b`; set `OLLAMA_BASE_URL` if it is not at `http://ollama:11434`.
 
 ## API
-`POST /v1/chat`
-```json
-{"messages":[{"role":"user","content":"سلام"}]}
-```
-Response:
-```json
-{"reply":"سلام! چطور می‌توانم کمک کنم؟","provider":"local-ollama","model":"qwen2.5:3b"}
-```
+- `GET /health` — provider readiness.
+- `POST /v1/chat` — `{"messages":[{"role":"user","content":"سلام"}]}`.
+- `GET /v1/conversations`, `POST /v1/conversations`, `GET /v1/conversations/:id`.
+- `POST /v1/conversations/:id/messages`, `DELETE /v1/conversations/:id`.
 
-## Security and cost
-- Ollama is intentionally not published to the host; only the FRIDAY API is exposed.
-- Put the API behind HTTPS (Caddy/Nginx/managed reverse proxy) before using it over the internet.
-- Restrict CORS to your app's web origins if needed; Android native apps do not use browser CORS enforcement.
-- Configure firewall, request limits, monitoring, and preferably an application access token before public launch.
-- No API inference fees, but server hosting, electricity, bandwidth, and storage may cost money.
-- Do not promise unlimited capacity: throughput depends on your machine.
-- Do not commit secrets or .env files.
+## Storage and security
+- Server data persists in `JARVIS_DATA_FILE` (default `./data/conversations.json`) using atomic file replacement.
+- The Android app separately stores recent history on-device.
+- Set `API_ACCESS_TOKEN` to require Bearer authentication for all `/v1/*` endpoints.
+- Set `CORS_ORIGIN` to a comma-separated allowlist for browser clients. Rate limiting is enabled.
+- Put public deployments behind HTTPS; never expose the Ollama port publicly.
+- API keys remain server-side and are never returned to Android.
+
+Local inference avoids per-request API charges, but hosting, hardware, power, bandwidth and storage may cost money.
