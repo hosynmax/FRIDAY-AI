@@ -228,13 +228,22 @@ private fun requestFriday(baseUrl: String, history: List<ChatMessage>, question:
         all.put(JSONObject().put("role", "user").put("content", question))
         connection.outputStream.use { it.write(JSONObject().put("messages", all).toString().toByteArray(Charsets.UTF_8)) }
         val code = connection.responseCode
+        val contentType = connection.contentType.orEmpty()
         val stream = if (code in 200..299) connection.inputStream else connection.errorStream
-        val response = stream.bufferedReader().use { it.readText() }
+        val response = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
         connection.disconnect()
-        if (code !in 200..299) "خطای سرور ($code): ${response.take(250)}"
-        else JSONObject(response).optString("reply").ifBlank { "سرور پاسخ خالی برگرداند." }
+        if (!contentType.contains("application/json", ignoreCase = true)) {
+            "پاسخ سرور معتبر نیست (HTTP $code). احتمالاً نشانی Backend اشتباه است؛ آدرس GitHub را وارد نکن. فقط آدرس پایه HTTPS سرور FRIDAY را وارد کن."
+        } else {
+            val json = runCatching { JSONObject(response) }.getOrNull()
+            if (code !in 200..299) {
+                json?.optString("error")?.takeIf { it.isNotBlank() } ?: "خطای سرور ($code)."
+            } else {
+                json?.optString("reply")?.takeIf { it.isNotBlank() } ?: "سرور پاسخ متنی معتبری برنگرداند."
+            }
+        }
     } catch (e: Exception) {
-        "اتصال به سرور برقرار نشد: ${e.localizedMessage ?: "خطای نامشخص"}. نشانی سرور و اینترنت را بررسی کن."
+        "اتصال به سرور برقرار نشد. نشانی باید با https:// شروع شود و به سرور Backend مستقرشده اشاره کند؛ آدرس GitHub قابل استفاده نیست."
     }
 }
 
