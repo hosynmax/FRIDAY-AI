@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.VolumeUp
@@ -85,6 +86,7 @@ fun FridayApp() {
     var showSettings by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var speakReplies by remember { mutableStateOf(prefs.getBoolean("speak_replies", true)) }
+    var speechLanguage by remember { mutableStateOf(prefs.getString("speech_language", "fa-IR") ?: "fa-IR") }
     val messages = remember {
         mutableStateListOf<ChatMessage>().apply {
             val saved = prefs.getString("chat_history", null)
@@ -124,7 +126,7 @@ fun FridayApp() {
         if (granted) {
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "fa-IR")
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, speechLanguage)
                 putExtra(RecognizerIntent.EXTRA_PROMPT, "با فرایدی صحبت کن")
             }
             runCatching { speechLauncher.launch(intent) }
@@ -144,7 +146,11 @@ fun FridayApp() {
         messages.add(ChatMessage(answer, false))
         persist()
         busy = false
-        if (speakReplies) tts?.speak(answer, TextToSpeech.QUEUE_FLUSH, null, "friday_reply")
+        if (speakReplies) {
+            val replyLocale = if (answer.any { it in '\u0600'.. '\u06FF' }) Locale("fa", "IR") else Locale.US
+            tts?.language = replyLocale
+            tts?.speak(answer, TextToSpeech.QUEUE_FLUSH, null, "friday_reply")
+        }
     }
 
     LaunchedEffect(messages.size) {
@@ -159,7 +165,10 @@ fun FridayApp() {
                 TopAppBar(
                     modifier = Modifier.padding(top = 12.dp, start = 8.dp, end = 8.dp),
                     title = { Column { Text("FRIDAY AI", fontWeight = FontWeight.ExtraBold, letterSpacing = 3.sp, fontSize = 21.sp); Text("YOUR INTELLIGENT COMPANION", fontSize = 9.sp, color = Mint, letterSpacing = 1.5.sp) } },
-                    actions = { IconButton(onClick = { showSettings = !showSettings }) { Icon(Icons.Default.Settings, "تنظیمات", tint = Color.White) } },
+                    actions = {
+                        IconButton(onClick = { context.startActivity(Intent(context, ToolsActivity::class.java)) }) { Icon(Icons.Default.Build, "ابزارها", tint = Mint) }
+                        IconButton(onClick = { showSettings = !showSettings }) { Icon(Icons.Default.Settings, "تنظیمات", tint = Color.White) }
+                    },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xCC0B192B), titleContentColor = Color.White)
                 )
             },
@@ -182,7 +191,7 @@ fun FridayApp() {
             }
         ) { padding ->
             if (showSettings) {
-                SettingsPanel(Modifier.padding(padding), serverUrl, { serverUrl = it }, speakReplies, { speakReplies = it; prefs.edit().putBoolean("speak_replies", it).apply() }) {
+                SettingsPanel(Modifier.padding(padding), serverUrl, { serverUrl = it }, speakReplies, { speakReplies = it; prefs.edit().putBoolean("speak_replies", it).apply() }, speechLanguage, { speechLanguage = it; prefs.edit().putString("speech_language", it).apply() }) {
                     prefs.edit().putString("server_url", serverUrl.trim().trimEnd('/')).apply()
                     serverUrl = serverUrl.trim().trimEnd('/')
                     showSettings = false
@@ -279,11 +288,16 @@ private fun requestFriday(baseUrl: String, history: List<ChatMessage>, question:
 }
 
 @Composable
-private fun SettingsPanel(modifier: Modifier = Modifier, serverUrl: String, onServerUrlChange: (String) -> Unit, speakReplies: Boolean, onSpeakChange: (Boolean) -> Unit, onSave: () -> Unit) {
+private fun SettingsPanel(modifier: Modifier = Modifier, serverUrl: String, onServerUrlChange: (String) -> Unit, speakReplies: Boolean, onSpeakChange: (Boolean) -> Unit, speechLanguage: String, onSpeechLanguageChange: (String) -> Unit, onSave: () -> Unit) {
     Column(modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text("تنظیمات فرایدی", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
         Text("اتصال به سرور هوش مصنوعی", color = Mint)
         OutlinedTextField(value = serverUrl, onValueChange = onServerUrlChange, modifier = Modifier.fillMaxWidth(), label = { Text("نشانی سرور HTTPS") }, placeholder = { Text("https://...") }, singleLine = true)
+        Text("زبان تشخیص صدای ورودی", color = Mint)
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            FilterChip(selected = speechLanguage == "fa-IR", onClick = { onSpeechLanguageChange("fa-IR") }, label = { Text("فارسی") })
+            FilterChip(selected = speechLanguage == "en-US", onClick = { onSpeechLanguageChange("en-US") }, label = { Text("English") })
+        }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("خواندن پاسخ‌ها با صدا", color = Color.White, modifier = Modifier.weight(1f))
             Switch(checked = speakReplies, onCheckedChange = onSpeakChange)

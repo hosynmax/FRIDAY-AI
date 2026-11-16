@@ -27,3 +27,10 @@ Deploy behind HTTPS and enter that HTTPS base URL in the Android app.
 
 ## Build APK
 Open in Android Studio with JDK 17 and Android SDK 35, then run `./gradlew assembleDebug`.
+
+
+## Cloudflare online AI backend
+The repository now includes a serverless online backend in `cloudflare/`, using Workers AI and D1. See [cloudflare/README.md](cloudflare/README.md) for setup. The service is not live until a Cloudflare account owner creates its D1 database, sets the admin secrets and deploys it.
+
+## Local tools in the Android app
+Open **ابزارها** from the top bar to use the local calculator and private on-device notes. Voice input can be switched between Persian and English in Settings; replies use the matching system Text-to-Speech language when available.

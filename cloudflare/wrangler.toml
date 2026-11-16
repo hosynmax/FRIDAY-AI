@@ -1,0 +1,29 @@
+name = "friday-ai-api"
+main = "src/index.js"
+compatibility_date = "2026-11-16"
+workers_dev = true
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = ["/admin", "/admin/*"]
+
+[ai]
+binding = "AI"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "friday-ai"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+[[ratelimits]]
+name = "API_LIMITER"
+namespace_id = "41027"
+
+[ratelimits.simple]
+limit = 12
+period = 60
+
+[vars]
+APP_NAME = "FRIDAY AI"

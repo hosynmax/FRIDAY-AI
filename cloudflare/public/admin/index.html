@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>مدیریت FRIDAY AI</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui, sans-serif;background:#071321;color:#edf6ff}
+body{margin:0;padding:24px;background:linear-gradient(145deg,#071321,#11122a);min-height:100vh}
+main{max-width:850px;margin:auto}.card{background:#10243a;border:1px solid #25415c;border-radius:18px;padding:20px;margin:14px 0}
+h1{margin:0 0 8px;color:#00d9ff}p{color:#b5c6d6}input,select,button,textarea{font:inherit;border-radius:10px;padding:12px;border:1px solid #41617b;background:#081827;color:#fff}
+input,select,textarea{box-sizing:border-box;width:100%;margin:8px 0}button{background:#00c9df;color:#04121e;font-weight:700;cursor:pointer;border:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}.stat{font-size:28px;font-weight:800;color:#62ecc8}
+small{color:#91a8bb}.hidden{display:none}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+</style></head>
+<body><main>
+<h1>FRIDAY AI | پنل مدیریت</h1><p>کنترل سرویس، مدل هوش مصنوعی و آمار مصرف</p>
+<section class="card" id="login">
+<h2>ورود مدیر اصلی</h2><input id="password" type="password" autocomplete="current-password" placeholder="رمز عبور مدیر">
+<button id="loginBtn">ورود امن</button><p id="loginMsg"></p>
+</section>
+<section id="dashboard" class="hidden">
+<div class="grid">
+<div class="card"><small>کل درخواست‌ها</small><div class="stat" id="total">—</div></div>
+<div class="card"><small>درخواست‌های ۲۴ ساعت</small><div class="stat" id="day">—</div></div>
+<div class="card"><small>مدل فعال</small><div class="stat" id="modelName" style="font-size:15px">—</div></div>
+</div>
+<div class="card"><h2>تنظیمات هوش مصنوعی</h2>
+<label>مدل</label><select id="model"><option value="@cf/openai/gpt-oss-20b">OpenAI GPT-OSS 20B (reasoning)</option><option value="@cf/meta/llama-3.3-70b-instruct-fp8-fast">Meta Llama 3.3 70B (higher cost)</option></select>
+<label>حداکثر توکن پاسخ</label><input id="maxTokens" type="number" min="128" max="2048" value="800">
+<label>پرامپت پایه</label><textarea id="systemPrompt" rows="5"></textarea>
+<div class="row"><label><input type="checkbox" id="maintenance" style="width:auto"> حالت تعمیرات (قطع چت کاربران)</label><button id="save">ذخیره تنظیمات</button></div><p id="saveMsg"></p></div>
+<div class="card"><h2>آخرین درخواست‌ها</h2><div id="recent">—</div></div>
+<button id="logout">خروج از پنل</button>
+</section>
+</main>
+<script>
+let token=sessionStorage.getItem("friday_admin_token")||"";
+const $=id=>document.getElementById(id);
+async function api(path,options={}){const response=await fetch(path,{...options,headers:{"Content-Type":"application/json","Authorization":"Bearer "+token,...(options.headers||{})}});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||"خطای سرویس");return data}
+function showDashboard(){ $("login").classList.toggle("hidden",!!token);$("dashboard").classList.toggle("hidden",!token);if(token)refresh()}
+async function refresh(){try{const d=await api("/admin/api/stats");$("total").textContent=d.totalRequests;$("day").textContent=d.requests24h;$("modelName").textContent=d.settings.model;$("model").value=d.settings.model;$("maxTokens").value=d.settings.maxTokens;$("systemPrompt").value=d.settings.systemPrompt;$("maintenance").checked=d.settings.maintenance; $("recent").innerHTML="";(d.recent||[]).forEach(x=>{const p=document.createElement("p");p.textContent=x.created_at+" | "+x.model+" | "+x.input_chars+" chars in / "+x.output_chars+" chars out";$("recent").appendChild(p)})}catch(e){$("saveMsg").textContent=e.message;token="";sessionStorage.removeItem("friday_admin_token");showDashboard()}}
+$("loginBtn").onclick=async()=>{try{const d=await fetch("/admin/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:$("password").value})});const j=await d.json();if(!d.ok)throw new Error(j.error||"ورود ناموفق");token=j.token;sessionStorage.setItem("friday_admin_token",token);$("loginMsg").textContent="";showDashboard()}catch(e){$("loginMsg").textContent=e.message}};
+$("save").onclick=async()=>{try{await api("/admin/api/settings",{method:"POST",body:JSON.stringify({model:$("model").value,maxTokens:Number($("maxTokens").value),systemPrompt:$("systemPrompt").value,maintenance:$("maintenance").checked})});$("saveMsg").textContent="تنظیمات ذخیره شد.";refresh()}catch(e){$("saveMsg").textContent=e.message}};
+$("logout").onclick=()=>{token="";sessionStorage.removeItem("friday_admin_token");showDashboard()};
+showDashboard();
+</script></body></html>
