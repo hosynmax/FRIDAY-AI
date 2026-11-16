@@ -226,7 +226,7 @@ private fun MusicLoveApp() {
     MaterialTheme(
         colorScheme = darkColorScheme(primary = Pink, secondary = Cyan, background = Ink, surface = Panel,
             onBackground = Color(0xFFF5F7FA), onSurface = Color(0xFFF5F7FA), onPrimary = Color(0xFF080A0D)),
-        typography = Typography(defaultFontFamily = FontFamily.SansSerif)
+        typography = Typography()
     ) {
         Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Ink, Color(0xFF171D20), Color(0xFF10251F))))) {
             Scaffold(
