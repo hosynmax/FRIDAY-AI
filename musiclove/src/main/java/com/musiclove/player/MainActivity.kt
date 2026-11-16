@@ -35,6 +35,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -43,6 +47,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import android.view.WindowManager
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
@@ -79,6 +84,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.attributes = window.attributes.apply {
+            layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER
+        }
         window.statusBarColor = android.graphics.Color.TRANSPARENT
         window.navigationBarColor = android.graphics.Color.TRANSPARENT
         WindowInsetsControllerCompat(window, window.decorView).apply {
@@ -215,9 +223,15 @@ private fun MusicLoveApp() {
         NavItem("پلی‌لیست", Icons.Default.QueueMusic), NavItem("تنظیمات", Icons.Default.Settings)
     )
 
-    MaterialTheme(colorScheme = darkColorScheme(primary = Pink, secondary = Cyan, background = Ink, surface = Panel)) {
-        Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Ink, Color(0xFF17102D), Color(0xFF102039))))) {
+    MaterialTheme(
+        colorScheme = darkColorScheme(primary = Pink, secondary = Cyan, background = Ink, surface = Panel,
+            onBackground = Color(0xFFF5F7FA), onSurface = Color(0xFFF5F7FA), onPrimary = Color(0xFF080A0D)),
+        typography = Typography(defaultFontFamily = FontFamily.SansSerif)
+    ) {
+        Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Ink, Color(0xFF171D20), Color(0xFF10251F))))) {
             Scaffold(
+                modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing),
+                contentWindowInsets = WindowInsets(0, 0, 0, 0),
                 containerColor = Color.Transparent,
                 topBar = {
                     Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -226,8 +240,8 @@ private fun MusicLoveApp() {
                         }
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
-                            Text("MUSIC LOVE", fontWeight = FontWeight.Black, fontSize = 20.sp, letterSpacing = 2.sp)
-                            Text("YOUR MUSIC • YOUR MOOD", fontSize = 9.sp, color = Cyan, letterSpacing = 1.5.sp)
+                            Text("MUSIC LOVE", fontWeight = FontWeight.Black, fontFamily = FontFamily.SansSerif, fontSize = 20.sp, letterSpacing = 1.6.sp, color = Color(0xFFF5F7FA))
+                            Text("YOUR MUSIC • YOUR MOOD", fontSize = 9.sp, fontWeight = FontWeight.SemiBold, color = Cyan, letterSpacing = 1.2.sp)
                         }
                         Surface(color = Panel2, shape = CircleShape) {
                             Text("3D", Modifier.padding(horizontal = 11.dp, vertical = 7.dp), color = Pink, fontWeight = FontWeight.Bold, fontSize = 11.sp)
@@ -533,7 +547,7 @@ private fun FullPlayerScreen(song: Song, playing: Boolean, position: Long, durat
     onShuffle: () -> Unit, onRepeat: () -> Unit, onSleep: () -> Unit) {
     val transition = rememberInfiniteTransition(label = "vinyl")
     val rotation by transition.animateFloat(0f, 360f, infiniteRepeatable(tween(11000, easing = LinearEasing), RepeatMode.Restart), label = "disc")
-    Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF18112F), Ink, Color(0xFF0C2036)))).padding(horizontal = 22.dp, vertical = 10.dp),
+    Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF20251F), Ink, Color(0xFF10251F)))).padding(horizontal = 22.dp, vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "بازگشت") }
