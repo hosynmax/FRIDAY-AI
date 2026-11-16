@@ -41,6 +41,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
@@ -58,13 +60,13 @@ import java.net.URL
 import java.net.URLEncoder
 import java.util.concurrent.Executor
 
-private val Ink = Color(0xFF090817)
-private val Panel = Color(0xFF171329)
-private val Panel2 = Color(0xFF241A3D)
-private val Pink = Color(0xFFFF4F9A)
-private val Violet = Color(0xFF9666FF)
-private val Cyan = Color(0xFF43DDF2)
-private val Muted = Color(0xFFB8B0CC)
+private val Ink = Color(0xFF080A0D)
+private val Panel = Color(0xFF12161B)
+private val Panel2 = Color(0xFF1A2027)
+private val Pink = Color(0xFFFF8A24)
+private val Violet = Color(0xFFFFAD55)
+private val Cyan = Color(0xFF20D69A)
+private val Muted = Color(0xFFA4ADB7)
 
 data class Song(
     val id: String, val title: String, val artist: String, val album: String,
@@ -76,9 +78,13 @@ private data class NavItem(val title: String, val icon: ImageVector)
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        WindowCompat.setDecorFitsSystemWindows(window, true)
-        window.statusBarColor = android.graphics.Color.rgb(9, 8, 23)
-        window.navigationBarColor = android.graphics.Color.rgb(9, 8, 23)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.statusBarColor = android.graphics.Color.TRANSPARENT
+        window.navigationBarColor = android.graphics.Color.TRANSPARENT
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            hide(WindowInsetsCompat.Type.systemBars())
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
         setContent { MusicLoveApp() }
     }
 }
@@ -235,7 +241,7 @@ private fun MusicLoveApp() {
                                 { if (controller?.isPlaying == true) controller?.pause() else controller?.play() },
                                 { controller?.seekToNextMediaItem() })
                         }
-                        NavigationBar(containerColor = Color(0xFF0E0B20)) {
+                        NavigationBar(containerColor = Color(0xFF080A0D)) {
                             nav.forEachIndexed { index, item ->
                                 NavigationBarItem(
                                     selected = tab == index,
@@ -243,7 +249,7 @@ private fun MusicLoveApp() {
                                     icon = { Icon(item.icon, item.title) },
                                     label = { Text(item.title, fontSize = 9.sp, maxLines = 1) },
                                     colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = Pink, selectedTextColor = Pink, indicatorColor = Color(0xFF38204B),
+                                        selectedIconColor = Pink, selectedTextColor = Pink, indicatorColor = Color(0xFF27332F),
                                         unselectedIconColor = Muted, unselectedTextColor = Muted
                                     )
                                 )
@@ -355,7 +361,7 @@ private fun HomeScreen(count: Int, recents: List<Song>, onLibrary: () -> Unit, o
         }
         item {
             Box(Modifier.fillMaxWidth().shadow(20.dp, RoundedCornerShape(28.dp)).clip(RoundedCornerShape(28.dp))
-                .background(Brush.linearGradient(listOf(Color(0xFF55235E), Color(0xFF30205F), Color(0xFF16445B)))).padding(20.dp)) {
+                .background(Brush.linearGradient(listOf(Color(0xFF6A3517), Color(0xFF202820), Color(0xFF174536)))).padding(20.dp)) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("YOUR SOUND. YOUR WORLD.", color = Cyan, fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
                     Text("موسیقی، با امضای تو", fontSize = 25.sp, fontWeight = FontWeight.Black)
@@ -536,8 +542,8 @@ private fun FullPlayerScreen(song: Song, playing: Boolean, position: Long, durat
         }
         Spacer(Modifier.weight(.4f))
         Box(Modifier.size(260.dp).shadow(28.dp, CircleShape).graphicsLayer { rotationZ = if (playing) rotation else 0f }
-            .clip(CircleShape).background(Brush.sweepGradient(listOf(Color(0xFF291648), Pink, Violet, Cyan, Color(0xFF291648)))), contentAlignment = Alignment.Center) {
-            Box(Modifier.size(236.dp).clip(CircleShape).background(Brush.radialGradient(listOf(Color(0xFF41316C), Panel, Ink))), contentAlignment = Alignment.Center) {
+            .clip(CircleShape).background(Brush.sweepGradient(listOf(Color(0xFF24352F), Pink, Violet, Cyan, Color(0xFF24352F)))), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(236.dp).clip(CircleShape).background(Brush.radialGradient(listOf(Color(0xFF242B27), Panel, Ink))), contentAlignment = Alignment.Center) {
                 Box(Modifier.size(110.dp).clip(CircleShape).background(Brush.linearGradient(listOf(Pink, Violet, Cyan))), contentAlignment = Alignment.Center) { Icon(Icons.Default.MusicNote, null, modifier = Modifier.size(56.dp)) }
                 Box(Modifier.size(8.dp).clip(CircleShape).background(Color.White.copy(alpha = .8f)))
             }
@@ -547,7 +553,7 @@ private fun FullPlayerScreen(song: Song, playing: Boolean, position: Long, durat
         Text(song.artist, color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 5.dp))
         Spacer(Modifier.height(22.dp))
         Slider(if (duration > 0) (position.toFloat() / duration).coerceIn(0f, 1f) else 0f, onSeek,
-            colors = SliderDefaults.colors(thumbColor = Pink, activeTrackColor = Pink, inactiveTrackColor = Color(0xFF514568)))
+            colors = SliderDefaults.colors(thumbColor = Pink, activeTrackColor = Pink, inactiveTrackColor = Color(0xFF3B4541)))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text(formatTime(position), color = Muted, fontSize = 10.sp); Text(formatTime(duration), color = Muted, fontSize = 10.sp) }
         Spacer(Modifier.height(16.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
@@ -590,14 +596,14 @@ private fun MiniPlayer(song: Song, playing: Boolean, onOpen: () -> Unit, onToggl
 private fun SongRow(song: Song, favorite: Boolean, onPlay: (Song) -> Unit, onFavorite: (Song) -> Unit, onAdd: (Song) -> Unit) {
     Surface(color = Panel.copy(alpha = .96f), shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth().clickable { onPlay(song) }) {
         Row(Modifier.padding(horizontal = 10.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(46.dp).clip(RoundedCornerShape(14.dp)).background(Brush.linearGradient(listOf(Color(0xFF56245C), Color(0xFF272451), Color(0xFF155060)))), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(46.dp).clip(RoundedCornerShape(14.dp)).background(Brush.linearGradient(listOf(Color(0xFF593116), Color(0xFF202820), Color(0xFF174536)))), contentAlignment = Alignment.Center) {
                 Icon(Icons.Default.Album, null, tint = Color.White, modifier = Modifier.size(24.dp))
             }
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 Text(song.title.ifBlank { "بدون عنوان" }, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(song.artist.ifBlank { "هنرمند نامشخص" }, color = Muted, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(if (song.online) "ONLINE • LICENSED" else "ON DEVICE", color = if (song.online) Cyan else Color(0xFFB78EFF), fontSize = 8.sp, letterSpacing = 1.sp)
+                Text(if (song.online) "ONLINE • LICENSED" else "ON DEVICE", color = if (song.online) Cyan else Color(0xFFFFAD55), fontSize = 8.sp, letterSpacing = 1.sp)
             }
             IconButton(onClick = { onFavorite(song) }) { Icon(if (favorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder, "علاقه‌مندی", tint = if (favorite) Pink else Muted, modifier = Modifier.size(19.dp)) }
             IconButton(onClick = { onAdd(song) }) { Icon(Icons.Default.Add, "افزودن به پلی‌لیست", tint = Cyan, modifier = Modifier.size(20.dp)) }
@@ -618,7 +624,7 @@ private fun StatCard(label: String, value: String, icon: ImageVector, modifier: 
 @Composable
 private fun EmptyState(title: String, message: String) {
     Column(Modifier.fillMaxWidth().padding(vertical = 30.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(Modifier.size(72.dp).clip(CircleShape).background(Brush.linearGradient(listOf(Color(0xFF54275D), Color(0xFF22214B)))), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(72.dp).clip(CircleShape).background(Brush.linearGradient(listOf(Color(0xFF593116), Color(0xFF202820)))), contentAlignment = Alignment.Center) {
             Icon(Icons.Default.MusicNote, null, tint = Cyan, modifier = Modifier.size(36.dp))
         }
         Spacer(Modifier.height(12.dp)); Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
