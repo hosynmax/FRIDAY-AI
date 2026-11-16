@@ -178,7 +178,7 @@ fun FridayApp() {
                         if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
                             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "fa-IR")
+                                putExtra(RecognizerIntent.EXTRA_LANGUAGE, speechLanguage)
                                 putExtra(RecognizerIntent.EXTRA_PROMPT, "با فرایدی صحبت کن")
                             }
                             runCatching { speechLauncher.launch(intent) }
