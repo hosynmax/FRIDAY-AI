@@ -126,7 +126,7 @@ fun FridayApp() {
         if (granted) {
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                if (speechLanguage != "auto") putExtra(RecognizerIntent.EXTRA_LANGUAGE, speechLanguage)
+                if (speechLanguage != "auto") if (speechLanguage != "auto") putExtra(RecognizerIntent.EXTRA_LANGUAGE, speechLanguage)
                 putExtra(RecognizerIntent.EXTRA_PROMPT, "با فرایدی صحبت کن")
             }
             runCatching { speechLauncher.launch(intent) }
