@@ -86,7 +86,7 @@ fun FridayApp() {
     var showSettings by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var speakReplies by remember { mutableStateOf(prefs.getBoolean("speak_replies", true)) }
-    var speechLanguage by remember { mutableStateOf(prefs.getString("speech_language", "fa-IR") ?: "fa-IR") }
+    var speechLanguage by remember { mutableStateOf(prefs.getString("speech_language", "auto") ?: "auto") }
     val messages = remember {
         mutableStateListOf<ChatMessage>().apply {
             val saved = prefs.getString("chat_history", null)
@@ -126,7 +126,7 @@ fun FridayApp() {
         if (granted) {
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE, speechLanguage)
+                if (speechLanguage != "auto") putExtra(RecognizerIntent.EXTRA_LANGUAGE, speechLanguage)
                 putExtra(RecognizerIntent.EXTRA_PROMPT, "با فرایدی صحبت کن")
             }
             runCatching { speechLauncher.launch(intent) }
@@ -294,10 +294,12 @@ private fun SettingsPanel(modifier: Modifier = Modifier, serverUrl: String, onSe
         Text("اتصال به سرور هوش مصنوعی", color = Mint)
         OutlinedTextField(value = serverUrl, onValueChange = onServerUrlChange, modifier = Modifier.fillMaxWidth(), label = { Text("نشانی سرور HTTPS") }, placeholder = { Text("https://...") }, singleLine = true)
         Text("زبان تشخیص صدای ورودی", color = Mint)
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(selected = speechLanguage == "auto", onClick = { onSpeechLanguageChange("auto") }, label = { Text("خودکار") })
             FilterChip(selected = speechLanguage == "fa-IR", onClick = { onSpeechLanguageChange("fa-IR") }, label = { Text("فارسی") })
             FilterChip(selected = speechLanguage == "en-US", onClick = { onSpeechLanguageChange("en-US") }, label = { Text("English") })
         }
+        Text("در حالت خودکار، زبان را موتور تشخیص گفتار گوشی تعیین می‌کند؛ پشتیبانی به موتور و بسته‌های نصب‌شده وابسته است.", color = Color.Gray, fontSize = 12.sp)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("خواندن پاسخ‌ها با صدا", color = Color.White, modifier = Modifier.weight(1f))
             Switch(checked = speakReplies, onCheckedChange = onSpeakChange)
