@@ -1,36 +1,44 @@
 # FRIDAY AI
 
-Native Android app (Kotlin + Jetpack Compose) and a self-hosted AI backend.
+**FRIDAY AI (فرایدی)** is a Persian-first native Android AI assistant with a server-backed model gateway and a permissioned command/action engine.
 
-## Android
-- Package: `com.friday.assistant`
-- Minimum Android: 13 (API 33)
-- Persian-first chat UI, local chat history, Android speech recognition and text-to-speech.
-- In Settings, enter the backend **HTTPS base URL only**, e.g. `https://ai.example.com`. The app appends `/v1/chat` automatically. Do not enter a GitHub repository URL.
+> Understands, plans, and acts only through explicit, validated Android capabilities and user approval where required.
 
-## Free AI backend (no paid API key)
-The backend uses Ollama with the open-weight Qwen2.5 model. Inference runs on your own server; no OpenAI/Gemini/Claude API keys are required.
-See [backend setup](backend/README.md).
+## Product documents
+- [Product Blueprint (FA)](docs/PRODUCT_BLUEPRINT_FA.md)
+- [UX Design System (FA)](docs/UX_DESIGN_SYSTEM_FA.md)
+- [AI and Action Architecture (FA)](docs/AI_ACTION_ARCHITECTURE_FA.md)
+- [Command Catalog (FA)](docs/COMMAND_CATALOG_FA.md)
+- [Implementation Roadmap (FA)](docs/IMPLEMENTATION_ROADMAP_FA.md)
+- [Master Build Prompt (FA)](BUILD_PROMPT_FA.md)
 
-Quick start from repository root:
-```bash
-docker compose up -d --build
-docker compose exec ollama ollama pull qwen2.5:3b
-```
-Deploy behind HTTPS and enter that HTTPS base URL in the Android app.
+## Current project baseline
+- Native Android app: Kotlin + Jetpack Compose.
+- Package: com.friday.assistant.
+- Current minimum Android: API 33.
+- Persian-first chat, local conversation history in the current app, Android speech recognition and Text-to-Speech.
+- Server-backed chat endpoint: POST /v1/chat.
+- Two backend paths are present: self-hosted Ollama and Cloudflare Workers AI with D1.
+- GitHub Actions can build a debug APK and upload an artifact when the workflow succeeds.
 
-## Important
-- "Free model" means no per-request AI API bill; hosting, electricity and hardware are still required.
-- Never expose Ollama port 11434 publicly.
-- Add an HTTPS reverse proxy, firewall and app authentication before public deployment.
-- Do not commit secrets.
+## Development direction
+The next engineering step is to evolve the current chat baseline into the architecture in the product documents: modular Android layers, Room/DataStore, streaming chat, a versioned AI gateway, typed ActionPlans, an allowlisted DeviceActionRegistry, explicit permission and confirmation flows, and automated tests.
 
-## Build APK
-Open in Android Studio with JDK 17 and Android SDK 35, then run `./gradlew assembleDebug`.
+The command engine must never execute arbitrary model-generated code. Android actions must use supported public APIs and preserve user control.
 
+## Backend options
+### Self-hosted Ollama
+See backend/README.md. Inference runs on hardware you control. Model quality and speed depend on the chosen model and server hardware.
 
-## Cloudflare online AI backend
-The repository now includes a serverless online backend in `cloudflare/`, using Workers AI and D1. See [cloudflare/README.md](cloudflare/README.md) for setup. The service is not live until a Cloudflare account owner creates its D1 database, sets the admin secrets and deploys it.
+### Cloudflare Workers AI
+See cloudflare/README.md. The service is not live until the account owner configures D1, secrets and deployment. Free-tier capacity is limited and does not mean unlimited inference.
 
-## Local tools in the Android app
-Open **ابزارها** from the top bar to use the local calculator and private on-device notes. Voice input can be switched between Persian and English in Settings; replies use the matching system Text-to-Speech language when available.
+## Build the Android APK
+Open this repository in Android Studio with a compatible JDK and Android SDK, or run the GitHub Actions workflow named Build FRIDAY AI APK. The APK exists only after a successful build. Download it from the successful workflow run’s Artifacts section.
+
+## Security
+- Never commit .env, API keys, admin passwords, signing credentials or access tokens.
+- Do not expose Ollama directly to the public internet.
+- Public backend deployments require HTTPS, authentication, rate limits and monitoring.
+- Do not claim device actions completed until Android confirms the result.
+- Microphone, location, files, contacts and notifications require transparent permission flows.
