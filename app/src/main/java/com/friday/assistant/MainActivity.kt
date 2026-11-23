@@ -16,6 +16,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.background
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -34,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -166,7 +168,6 @@ fun FridayApp() {
                     modifier = Modifier.padding(top = 12.dp, start = 8.dp, end = 8.dp),
                     title = { Column { Text("FRIDAY AI", fontWeight = FontWeight.ExtraBold, letterSpacing = 3.sp, fontSize = 21.sp); Text("YOUR INTELLIGENT COMPANION", fontSize = 9.sp, color = Mint, letterSpacing = 1.5.sp) } },
                     actions = {
-                        IconButton(onClick = { context.startActivity(Intent(context, ToolsActivity::class.java)) }) { Icon(Icons.Default.Build, "ابزارها", tint = Mint) }
                         IconButton(onClick = { showSettings = !showSettings }) { Icon(Icons.Default.Settings, "تنظیمات", tint = Color.White) }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xCC0B192B), titleContentColor = Color.White)
@@ -199,45 +200,33 @@ fun FridayApp() {
             } else {
                 Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF071321), Color(0xFF0B1730), Color(0xFF120F28)))).padding(padding)) {
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = { openChatGPT(context) },
-                            modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
-                        ) { Text("ChatGPT", color = Color.White, maxLines = 1) }
-                        OutlinedButton(
-                            onClick = {
-                                val query = input.trim().ifBlank { messages.lastOrNull { it.fromUser }?.text.orEmpty() }
-                                if (query.isBlank()) {
-                                    android.widget.Toast.makeText(context, "ابتدا عبارت جست‌وجو را بنویس.", android.widget.Toast.LENGTH_SHORT).show()
-                                } else {
-                                    searchGoogle(context, query)
-                                }
-                            },
-                            modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
-                        ) { Text("جست‌وجوی گوگل", color = Mint, maxLines = 1) }
-                    }
-                    Text(
-                        "پاسخ‌گویی هوشمند محلی از طریق سرور FRIDAY",
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp),
-                        color = Mint.copy(alpha = 0.8f),
-                        textAlign = TextAlign.Center,
-                        fontSize = 11.sp
-                    )
-                    Box(Modifier.fillMaxWidth().padding(top = 12.dp), contentAlignment = Alignment.Center) {
-                        Box(Modifier.size(142.dp).background(Brush.radialGradient(listOf(Color(0x884B55FF), Color(0x5530DFFF), Color.Transparent)), CircleShape), contentAlignment = Alignment.Center) {
-                            Surface(shape = CircleShape, color = Color(0x5532DFFF), tonalElevation = 12.dp, shadowElevation = 18.dp) {
-                                Box(Modifier.size(88.dp).background(Brush.linearGradient(listOf(Color(0xFF173E5B), Color(0xFF241B4A))), CircleShape), contentAlignment = Alignment.Center) {
-                                    Text("F", color = Cyan, fontSize = 52.sp, fontWeight = FontWeight.Black)
-                                }
+                    val motion = rememberInfiniteTransition(label = "friday_orbit")
+                    val orbitAngle by motion.animateFloat(0f, 360f, infiniteRepeatable(tween(9000, easing = LinearEasing)), label = "orbit")
+                    val breathe by motion.animateFloat(0.94f, 1.04f, infiniteRepeatable(tween(1800, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "breathe")
+                    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Surface(shape = RoundedCornerShape(50), color = Color(0x3321D7F5), border = androidx.compose.foundation.BorderStroke(1.dp, Cyan.copy(alpha = 0.45f))) {
+                            Row(Modifier.padding(horizontal = 14.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Box(Modifier.size(7.dp).background(if (busy) Color(0xFFFFB547) else Mint, CircleShape))
+                                Spacer(Modifier.width(8.dp))
+                                Text(if (busy) "در حال پردازش" else "سامانه آماده گفتگو", color = Color(0xFFE5FCFF), fontSize = 11.sp)
                             }
                         }
+                        Box(Modifier.padding(top = 14.dp).size(190.dp), contentAlignment = Alignment.Center) {
+                            Box(Modifier.size(184.dp).graphicsLayer { rotationZ = orbitAngle }.background(Brush.sweepGradient(listOf(Color.Transparent, Cyan.copy(alpha = 0.8f), Mint.copy(alpha = 0.2f), Color.Transparent)), CircleShape))
+                            Box(Modifier.size(168.dp).background(Color(0xFF091626), CircleShape))
+                            Box(Modifier.size(148.dp).graphicsLayer { scaleX = breathe; scaleY = breathe }.background(Brush.radialGradient(listOf(Color(0xFF3A78A8), Color(0xFF182B58), Color(0xFF10152E))), CircleShape))
+                            Surface(modifier = Modifier.size(106.dp).graphicsLayer { rotationZ = -orbitAngle * 0.35f }, shape = RoundedCornerShape(32.dp), color = Color.Transparent, border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF72F4FF).copy(alpha = 0.7f)), shadowElevation = 28.dp) {
+                                Box(Modifier.background(Brush.linearGradient(listOf(Color(0xFF235B78), Color(0xFF20204C), Color(0xFF111A34))), CircleShape), contentAlignment = Alignment.Center) {
+                                    Text("F", color = Color.White, fontSize = 58.sp, fontWeight = FontWeight.Black, letterSpacing = (-2).sp)
+                                }
+                            }
+                            Box(Modifier.offset(x = 66.dp, y = (-56).dp).size(13.dp).background(Cyan, CircleShape))
+                            Box(Modifier.offset(x = (-70).dp, y = 50.dp).size(8.dp).background(Mint, CircleShape))
+                        }
+                        Text("FRIDAY", Modifier.padding(top = 10.dp), color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Black, letterSpacing = 5.sp)
+                        Text("هوش مصنوعی همراه تو", Modifier.padding(top = 2.dp), color = Color(0xFF8FAFC8), fontSize = 13.sp)
+                        Text(if (busy) "در حال فکر کردن..." else "بگو، من گوش می‌دهم.", Modifier.padding(top = 12.dp, bottom = 8.dp), color = if (busy) Mint else Color(0xFFEAFBFF), textAlign = TextAlign.Center, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
                     }
-                    Text(if (busy) "در حال فکر کردن..." else "در خدمتم.", Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 10.dp), color = if (busy) Mint else Color.White, textAlign = TextAlign.Center, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                     LazyColumn(state = listState, modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 14.dp), verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 16.dp)) {
                         items(messages) { msg ->
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = if (msg.fromUser) Arrangement.Start else Arrangement.End) {
